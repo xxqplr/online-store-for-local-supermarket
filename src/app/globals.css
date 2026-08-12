@@ -1,26 +1,67 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --brand-red: #E4392E;
+  --brand-red-dark: #B92A21;
+  --brand-gold: #F2B705;
+  --brand-charcoal: #241C18;
+  --brand-bg: #FBF8F4;
+  --surface: #FFFFFF;
+  --surface-alt: rgba(251, 248, 244, 0.9);
+  --text-primary: #241C18;
+  --text-muted: rgba(36, 28, 24, 0.6);
+  --border-color: rgba(36, 28, 24, 0.1);
+  --border-strong: rgba(36, 28, 24, 0.18);
+  --overlay: rgba(36, 28, 24, 0.4);
+  --skeleton: rgba(36, 28, 24, 0.08);
+  --danger-bg: rgba(228, 57, 46, 0.08);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+[data-theme="dark"] {
+  --brand-bg: #15110D;
+  --surface: #211B16;
+  --surface-alt: rgba(21, 17, 13, 0.9);
+  --text-primary: #F3EEE8;
+  --text-muted: rgba(243, 238, 232, 0.6);
+  --border-color: rgba(243, 238, 232, 0.12);
+  --border-strong: rgba(243, 238, 232, 0.22);
+  --overlay: rgba(0, 0, 0, 0.6);
+  --skeleton: rgba(243, 238, 232, 0.08);
+  --danger-bg: rgba(228, 57, 46, 0.18);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-cairo), sans-serif;
+  background: var(--brand-bg);
+  color: var(--text-primary);
+  transition: background 0.2s ease, color 0.2s ease;
 }
+
+.font-mono-price {
+  font-family: var(--font-jetbrains-mono), monospace;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand-red);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fade-up { animation: fadeUp .5s ease both; }
+  .pop { animation: pop .35s ease; }
+  .drawer-in-ltr { animation: drawerInLtr .28s ease both; }
+  .drawer-in-rtl { animation: drawerInRtl .28s ease both; }
+  .scale-hover { transition: transform .2s ease, box-shadow .2s ease; }
+  .scale-hover:hover { transform: translateY(-3px); }
+  .btn-press { transition: transform .12s ease; }
+  .btn-press:active { transform: scale(0.96); }
+}
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pop { 0% { transform: scale(1); } 45% { transform: scale(1.3); } 100% { transform: scale(1); } }
+@keyframes drawerInLtr { from { transform: translateX(100%); opacity: .6; } to { transform: translateX(0); opacity: 1; } }
+@keyframes drawerInRtl { from { transform: translateX(-100%); opacity: .6; } to { transform: translateX(0); opacity: 1; } }
