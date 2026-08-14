@@ -21,23 +21,13 @@ import { supabase } from "../lib/supabaseClient";
 
 const ICONS = { Package, Droplets, Milk };
 
-const CATEGORY_ORDER = ["cleaning", "pantry", "beverages", "dairy", "personal_care", "snacks"];
-
-const CATEGORY_LABELS = {
-  cleaning: { ar: "منظفات ومستلزمات المنزل", en: "Cleaning & Household" },
-  pantry: { ar: "المواد الغذائية", en: "Pantry & Groceries" },
-  beverages: { ar: "المشروبات", en: "Beverages" },
-  dairy: { ar: "الألبان والبيض", en: "Dairy & Eggs" },
-  personal_care: { ar: "العناية الشخصية", en: "Personal Care" },
-  snacks: { ar: "وجبات خفيفة", en: "Snacks" },
-  drinks: { ar: "المشروبات", en: "Drinks" },
-  deli : { ar: "اللحوم والجبن", en: "Deli" }, 
-  coffee: { ar: "القهوة", en: "Coffee" },
-};
-
-function categoryLabel(slug, isRTL) {
-  const known = CATEGORY_LABELS[slug];
-  if (known) return isRTL ? known.ar : known.en;
+function categoryLabel(categoriesList, slug, isRTL) {
+  // Safety check to ensure categoriesList is an array and slug is a string
+  if (!Array.isArray(categoriesList) || typeof slug !== "string") {
+    return String(slug);
+  }
+  const found = categoriesList.find((c) => c.slug === slug);
+  if (found) return isRTL ? found.nameAr : found.nameEn;
   return slug.charAt(0).toUpperCase() + slug.slice(1).replace(/_/g, " ");
 }
 
@@ -52,6 +42,10 @@ const translations = {
     badgeDelivery: "توصيل سريع لباب البيت",
     productsTitle: "منتجاتنا",
     categoriesLabel: "الأقسام",
+    sortLabel: "الترتيب",
+    sortDefault: "الترتيب الافتراضي",
+    sortPriceAsc: "السعر: من الأقل للأعلى",
+    sortPriceDesc: "السعر: من الأعلى للأقل",
     allCategories: "الكل",
     noProducts: "ما في منتجات بهاد القسم حاليًا",
     addToCart: "أضف للسلة",
@@ -92,6 +86,10 @@ const translations = {
     badgeDelivery: "Fast delivery to your door",
     productsTitle: "Our Products",
     categoriesLabel: "Categories",
+    sortLabel: "Sort",
+    sortDefault: "Default",
+    sortPriceAsc: "Price: Low to High",
+    sortPriceDesc: "Price: High to Low",
     allCategories: "All",
     noProducts: "No products in this category yet",
     addToCart: "Add to cart",
@@ -136,8 +134,6 @@ function ProductImage({ product, isRTL, size = 96, fill = false }) {
       style={{
         height: size,
         width: fill ? "100%" : size,
-        // Always a light, neutral backdrop for real product photography —
-        // never theme-driven, since photos usually have their own light background baked in.
         background: product.imageUrl ? "#F5F5F5" : tintBg,
         border: product.imageUrl ? "1px solid var(--border-color)" : "none",
       }}
@@ -175,6 +171,8 @@ export default function Home() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [categories, setCategories] = useState([]);
+  const [sortOrder, setSortOrder] = useState("default");
   const prevCount = useRef(0);
 
   const t = translations[lang];
@@ -186,12 +184,20 @@ export default function Home() {
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
   const cartTotal = cartItems.reduce((s, i) => s + i.product.price * i.qty, 0);
 
-  const presentCategories = CATEGORY_ORDER.filter((c) => products.some((p) => p.category === c)).concat(
-    [...new Set(products.map((p) => p.category))].filter((c) => !CATEGORY_ORDER.includes(c))
-  );
+  const presentCategories =
+    categories.length > 0
+      ? categories
+          .map((c) => c.slug)
+          .concat([...new Set(products.map((p) => p.category))].filter((c) => !categories.some((cat) => cat.slug === c)))
+      : [...new Set(products.map((p) => p.category))];
 
-  const filteredProducts =
-    selectedCategory === "all" ? products : products.filter((p) => p.category === selectedCategory);
+  const filteredProducts = (selectedCategory === "all" ? products : products.filter((p) => p.category === selectedCategory))
+    .slice()
+    .sort((a, b) => {
+      if (sortOrder === "price_asc") return a.price - b.price;
+      if (sortOrder === "price_desc") return b.price - a.price;
+      return 0;
+    });
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -209,9 +215,6 @@ export default function Home() {
             sizeAr: p.size_ar,
             sizeEn: p.size_en,
             price: Number(p.price),
-            // Optional: add an `original_price` column in Supabase to enable the
-            // "Save X%" badge + strikethrough price. Rows without it render exactly
-            // as before — nothing breaks if the column doesn't exist yet.
             originalPrice: p.original_price != null ? Number(p.original_price) : null,
             icon: p.icon,
             tint: p.tint,
@@ -223,6 +226,20 @@ export default function Home() {
       setProductsLoading(false);
     };
     fetchProducts();
+  }, []);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("*")
+        .eq("active", true)
+        .order("sort_order", { ascending: true });
+      if (!error && data) {
+        setCategories(data.map((c) => ({ slug: c.slug, nameAr: c.name_ar, nameEn: c.name_en })));
+      }
+    };
+    fetchCategories();
   }, []);
 
   useEffect(() => {
@@ -423,7 +440,8 @@ export default function Home() {
                       : { background: "var(--surface)", color: "var(--text-primary)", border: "1px solid var(--border-color)" }
                   }
                 >
-                  {categoryLabel(c, isRTL)}
+                  {/* FIX: Passed 'categories' as the first argument */}
+                  {categoryLabel(categories, c, isRTL)}
                 </button>
               ))}
             </div>
@@ -499,7 +517,8 @@ export default function Home() {
                               : { color: "var(--text-primary)" }
                           }
                         >
-                          {categoryLabel(c, isRTL)}
+                          {/* FIX: Passed 'categories' as the first argument */}
+                          {categoryLabel(categories, c, isRTL)}
                         </button>
                       ))}
                     </nav>
@@ -507,7 +526,7 @@ export default function Home() {
                 )}
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
                     <h2 className="text-xl font-extrabold flex items-center gap-2 flex-wrap">
                       {selectedCategory === "all" ? (
                         t.productsTitle
@@ -515,15 +534,32 @@ export default function Home() {
                         <>
                           <span style={{ color: "var(--text-muted)" }}>{t.productsTitle}</span>
                           <span style={{ color: "var(--text-muted)" }}>›</span>
-                          <span>{categoryLabel(selectedCategory, isRTL)}</span>
+                          <span>{categoryLabel(categories, selectedCategory, isRTL)}</span>
                         </>
                       )}
                     </h2>
-                    {!productsLoading && (
-                      <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-                        {filteredProducts.length}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-3">
+                      <select
+                        value={sortOrder}
+                        onChange={(e) => setSortOrder(e.target.value)}
+                        aria-label={t.sortLabel}
+                        className="text-xs font-semibold rounded-lg px-3 py-2 btn-press"
+                        style={{
+                          border: "1px solid var(--border-strong)",
+                          background: "var(--surface)",
+                          color: "var(--text-primary)",
+                        }}
+                      >
+                        <option value="default">{t.sortDefault}</option>
+                        <option value="price_asc">{t.sortPriceAsc}</option>
+                        <option value="price_desc">{t.sortPriceDesc}</option>
+                      </select>
+                      {!productsLoading && (
+                        <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+                          {filteredProducts.length}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {productsLoading ? (
