@@ -75,7 +75,14 @@ const translations = {
     orderNumberLabel: "رقم الطلب",
     backToShopBtn: "العودة للمتجر",
     currency: "د.ا",
+
+
+    notesLabel: "ملاحظات إضافية (اختياري)",
+    notesPlaceholder: "أي ملاحظات خاصة بالتوصيل أو الطلب...",
+
   },
+
+
   en: {
     storeName: "Kokh Al-Mouna Market",
     tagline: "Compare & Save",
@@ -119,6 +126,9 @@ const translations = {
     orderNumberLabel: "Order number",
     backToShopBtn: "Back to shop",
     currency: "JD",
+
+    notesLabel: "Order Notes (Optional)",
+    notesPlaceholder: "Any special instructions or delivery details...",
   },
 };
 
@@ -174,6 +184,11 @@ export default function Home() {
   const [categories, setCategories] = useState([]);
   const [sortOrder, setSortOrder] = useState("default");
   const prevCount = useRef(0);
+
+const [notes, setNotes] = useState("");
+
+
+
 
   const t = translations[lang];
   const isRTL = lang === "ar";
@@ -329,9 +344,11 @@ export default function Home() {
       order_number: orderNumber,
       customer_name: name.trim(),
       customer_phone: phone.trim(),
+      notes: notes.trim(),
       items: itemsPayload,
       total: cartTotal,
     });
+    setNotes("");
 
     setSubmitting(false);
 
@@ -735,6 +752,21 @@ export default function Home() {
                 )}
               </label>
 
+<label className="flex flex-col gap-1.5">
+  <span className="text-sm font-bold">{t.notesLabel}</span>
+  <textarea
+    value={notes}
+    onChange={(e) => setNotes(e.target.value)}
+    placeholder={t.notesPlaceholder}
+    rows={3}
+    className="rounded-xl px-4 py-3 text-sm resize-none"
+    style={{
+      border: "1.5px solid var(--border-strong)",
+      background: "var(--surface)",
+      color: "var(--text-primary)",
+    }}
+  />
+</label>
               <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
                 {t.checkoutNote}
               </p>
