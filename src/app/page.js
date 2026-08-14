@@ -16,6 +16,8 @@ import {
   AlertTriangle,
   Sun,
   Moon,
+   ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 
@@ -183,6 +185,8 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [categories, setCategories] = useState([]);
   const [sortOrder, setSortOrder] = useState("default");
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 30;
   const prevCount = useRef(0);
 
 const [notes, setNotes] = useState("");
@@ -213,6 +217,9 @@ const [notes, setNotes] = useState("");
       if (sortOrder === "price_desc") return b.price - a.price;
       return 0;
     });
+
+    const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
+  const paginatedProducts = filteredProducts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -283,6 +290,15 @@ const [notes, setNotes] = useState("");
     } catch (e) {}
     setThemeHydrated(true);
   }, []);
+
+
+useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, sortOrder]);
+
+
+
+
 
   useEffect(() => {
     if (!themeHydrated) return;
@@ -579,6 +595,44 @@ const [notes, setNotes] = useState("");
                     </div>
                   </div>
 
+{!productsLoading && totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-4 mt-8">
+                      <button
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="flex items-center justify-center rounded-full btn-press scale-hover"
+                        style={{
+                          width: 38,
+                          height: 38,
+                          border: "1px solid var(--border-strong)",
+                          opacity: currentPage === 1 ? 0.4 : 1,
+                          background: "var(--surface)",
+                        }}
+                        aria-label="Previous page"
+                      >
+                        <ChevronLeft size={18} style={{ transform: isRTL ? "scaleX(-1)" : "none" }} />
+                      </button>
+                      <span className="text-sm font-semibold" style={{ color: "var(--text-muted)" }}>
+                        {isRTL ? `صفحة ${currentPage} من ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
+                      </span>
+                      <button
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="flex items-center justify-center rounded-full btn-press scale-hover"
+                        style={{
+                          width: 38,
+                          height: 38,
+                          border: "1px solid var(--border-strong)",
+                          opacity: currentPage === totalPages ? 0.4 : 1,
+                          background: "var(--surface)",
+                        }}
+                        aria-label="Next page"
+                      >
+                        <ChevronRight size={18} style={{ transform: isRTL ? "scaleX(-1)" : "none" }} />
+                      </button>
+                    </div>
+                  )}
+
                   {productsLoading ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                       {[0, 1, 2, 3].map((i) => (
@@ -601,7 +655,7 @@ const [notes, setNotes] = useState("");
                     </p>
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {filteredProducts.map((p, idx) => {
+                      {paginatedProducts.map((p, idx) => {
                         const justAdded = toastId === p.id;
                         const discountPct =
                           p.originalPrice && p.originalPrice > p.price
@@ -867,8 +921,12 @@ const [notes, setNotes] = useState("");
                           >
                             <Plus size={12} />
                           </button>
+
+                          
                         </div>
+                      
                       </div>
+                      
                       <button onClick={() => removeItem(i.id)} className="text-xs font-semibold underline self-start btn-press" style={{ color: "var(--brand-red)" }}>
                         {t.remove}
                       </button>
