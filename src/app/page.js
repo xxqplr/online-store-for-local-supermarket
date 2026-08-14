@@ -45,7 +45,7 @@ const translations = {
     productsTitle: "منتجاتنا",
     categoriesLabel: "الأقسام",
     sortLabel: "الترتيب",
-    sortDefault: "الترتيب الافتراضي",
+    sortDefault: "الترتيب ",
     sortPriceAsc: "السعر: من الأقل للأعلى",
     sortPriceDesc: "السعر: من الأعلى للأقل",
     allCategories: "الكل",
